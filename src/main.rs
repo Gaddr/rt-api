@@ -12,8 +12,9 @@ mod services;
 mod db;
 pub mod queries;
 
-use crate::services::{api::get_admin_scope};
 use load_dotenv::load_dotenv;
+
+use crate::services::api::api_scope;
 
 #[derive(Clone)]
 pub struct Environment {
@@ -51,7 +52,7 @@ async fn main() -> std::io::Result<()> {
             .allowed_origin("http://localhost:3000")
             .allowed_origin("http://localhost:5173")
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
-            .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+            // .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
             .allowed_header(http::header::CONTENT_TYPE)
             .max_age(3600);
 
@@ -62,7 +63,7 @@ async fn main() -> std::io::Result<()> {
                 http_client: client.clone(),
                 environment: environment.clone(),
             }))
-            .service(get_admin_scope())
+            .service(api_scope())
     })
     .bind(("0.0.0.0", 8080))?
     .run()

@@ -1,10 +1,10 @@
 use crate::{
     auth::auth,
     models::api::{
-        CreateCourseRequest,
+        CreateDocumentRequest,
     },
     queries::{
-        query_add_course, query_get_course_by_name,
+        query_add_document, query_get_document_by_name,
     },
     AppState,
 };
@@ -15,59 +15,43 @@ use actix_web::{
     HttpResponse, Responder, Scope,
 };
 
-use sqlx::{self, types::chrono::DateTime};
+use sqlx::{self, types::chrono::{DateTime, Utc, NaiveDateTime}};
 use uuid::Uuid;
 
-// TODO: remove this admin scope
-pub fn get_admin_scope() -> Scope {
-    return web::scope("/admin")
-        .service(create_course)
+pub fn api_scope() -> Scope {
+    return web::scope("")
+        .service(create_document);
 }
 
-#[post("/course")]
-async fn create_course(
+#[post("/new")]
+async fn create_document(
     state: Data<AppState>,
-    body: Json<CreateCourseRequest>,
-    _: auth::JwtMiddleware,
+    body: Json<CreateDocumentRequest>,
+    // _: auth::JwtMiddleware,
 ) -> impl Responder {
-    // Check if course with this name already exists
-    let course_exists = query_get_course_by_name(&state, body.course_name.to_string()).await;
+    // Check if document with this name already exists
+    let document_exists = query_get_document_by_name(&state, body.name.to_string()).await;
 
-    if course_exists.is_ok() {
-        return HttpResponse::BadRequest().json("Course with this name already exists!");
+    if document_exists.is_ok() {
+        return HttpResponse::BadRequest().json("Doc with this name already exists. Please choose a different name.");
     }
 
-    // Otherwise create new id, convert dates from string to datetime and query the db
+    // Otherwise create new id, and set created_at and modified_at to current timestamp (UTC)
     let id = Uuid::new_v4();
+    // TODO: fix: doesnt get current timestamp
+    let current_timestamp = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(61, 0).unwrap(), Utc);
+    println!("current_timestamp {}", current_timestamp);
 
-    let start_date = match DateTime::parse_from_rfc3339(&body.start_date) {
-        Ok(parsed_date) => parsed_date,
-        Err(err) => {
-            // handle the error
-            println!("An error occurred while parsing the date: {:?}", err);
-            return HttpResponse::BadRequest().json("Could not parse start_date!");
-        }
-    };
-
-    let end_date = match DateTime::parse_from_rfc3339(&body.end_date) {
-        Ok(parsed_date) => parsed_date,
-        Err(err) => {
-            // handle the error
-            println!("An error occurred while parsing the date: {:?}", err);
-            return HttpResponse::BadRequest().json("Could not parse end_date!");
-        }
-    };
-
-    match query_add_course(&state, &id, &start_date, &end_date, &body).await {
-        Ok(_) => HttpResponse::Ok().json("Course added!"),
+    match query_add_document(&state, &id, &body, &current_timestamp).await {
+        Ok(_) => HttpResponse::Ok().json("Document created!"),
         Err(err) => {
             if err.to_string().contains("duplicate") {
-                return HttpResponse::BadRequest().json("Course already exists!");
+                return HttpResponse::BadRequest().json("Document already exists!");
             } else {
-                if err.to_string().contains("violates foreign key") {
-                    return HttpResponse::BadRequest().json("Error adding course. Please make sure that the all cities and subcategories provided really exists");
+                if err.to_string().contains("violates foreign key") { // TODO: Please make sure cities etc exist
+                    return HttpResponse::BadRequest().json("Error creating document - foreign key violation.");
                 } else {
-                    return HttpResponse::InternalServerError().json("Error adding course.");
+                    return HttpResponse::InternalServerError().json(err.to_string());
                 }
             }
         }

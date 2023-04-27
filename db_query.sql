@@ -1,6 +1,6 @@
-CREATE SCHEMA "gaddrdb";
+CREATE SCHEMA "grt";
 
-CREATE TABLE "gaddrdb"."document" (
+CREATE TABLE "grt"."document" (
   "id" uuid PRIMARY KEY,
   "name" varchar UNIQUE,
   "created_at" timestamptz,
