@@ -1,12 +1,5 @@
 use crate::{
-    models::{
-        api::{
-            CreateDocumentRequest,
-        },
-        db::{
-            Document,
-        },
-    },
+    models::{api::CreateDocumentRequest, db::Document},
     AppState,
 };
 use ::chrono::{DateTime, FixedOffset};
@@ -22,14 +15,16 @@ pub async fn query_add_document(
 ) -> Result<(), sqlx::Error> {
     let mut tx = state.db.begin().await?;
 
-    let result_create_document = sqlx::query("INSERT INTO grt.document (id, name, created_at, modified_at) VALUES ($1, $2, $3, $4)")
-            .bind(&id)
-            .bind(&document_details.name.to_string())
-            .bind(&current_timestamp)
-            .bind(&current_timestamp)
-            .execute(&mut tx)
-            .await?
-            .rows_affected();
+    let result_create_document = sqlx::query(
+        "INSERT INTO grt.document (id, name, created_at, modified_at) VALUES ($1, $2, $3, $4)",
+    )
+    .bind(&id)
+    .bind(&document_details.name.to_string())
+    .bind(&current_timestamp)
+    .bind(&current_timestamp)
+    .execute(&mut tx)
+    .await?
+    .rows_affected();
 
     if result_create_document == 0 {
         return tx.rollback().await;
@@ -37,6 +32,13 @@ pub async fn query_add_document(
 
     let result = tx.commit().await;
 
+    return result;
+}
+
+pub async fn query_get_all_documents(state: &Data<AppState>) -> Result<Vec<Document>, sqlx::Error> {
+    let result = sqlx::query_as::<_, Document>("SELECT * FROM grt.document")
+        .fetch_all(&state.db)
+        .await;
     return result;
 }
 

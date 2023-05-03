@@ -29,7 +29,3 @@ pub async fn get_db_pool(db_url: &str) -> Pool<Postgres> {
 
     return pool;
 }
-
-//  pub async fn create_tables_if_needed(pool: &Pool<Postgres>) {
-// //     todo!()
-//  }

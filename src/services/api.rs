@@ -1,11 +1,7 @@
 use crate::{
     auth::auth,
-    models::api::{
-        CreateDocumentRequest,
-    },
-    queries::{
-        query_add_document, query_get_document_by_name,
-    },
+    models::api::{CreateDocumentRequest, GetDocumentsResponse},
+    queries::{query_add_document, query_get_all_documents, query_get_document_by_name},
     AppState,
 };
 
@@ -15,12 +11,16 @@ use actix_web::{
     HttpResponse, Responder, Scope,
 };
 
-use sqlx::{self, types::chrono::{DateTime, Utc, NaiveDateTime}};
+use sqlx::{
+    self,
+    types::chrono::{DateTime, NaiveDateTime, Utc},
+};
 use uuid::Uuid;
 
 pub fn api_scope() -> Scope {
     return web::scope("")
-        .service(create_document);
+        .service(create_document)
+        .service(get_all_names);
 }
 
 #[post("/new")]
@@ -33,13 +33,13 @@ async fn create_document(
     let document_exists = query_get_document_by_name(&state, body.name.to_string()).await;
 
     if document_exists.is_ok() {
-        return HttpResponse::BadRequest().json("Doc with this name already exists. Please choose a different name.");
+        return HttpResponse::BadRequest()
+            .json("Doc with this name already exists. Please choose a different name.");
     }
 
     // Otherwise create new id, and set created_at and modified_at to current timestamp (UTC)
     let id = Uuid::new_v4();
-    // TODO: fix: doesnt get current timestamp
-    let current_timestamp = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(61, 0).unwrap(), Utc);
+    let current_timestamp = Utc::now();
     println!("current_timestamp {}", current_timestamp);
 
     match query_add_document(&state, &id, &body, &current_timestamp).await {
@@ -48,12 +48,27 @@ async fn create_document(
             if err.to_string().contains("duplicate") {
                 return HttpResponse::BadRequest().json("Document already exists!");
             } else {
-                if err.to_string().contains("violates foreign key") { // TODO: Please make sure cities etc exist
-                    return HttpResponse::BadRequest().json("Error creating document - foreign key violation.");
-                } else {
-                    return HttpResponse::InternalServerError().json(err.to_string());
-                }
+                return HttpResponse::InternalServerError().json(err.to_string());
             }
         }
+    }
+}
+
+#[get("/getAllNames")]
+async fn get_all_names(state: Data<AppState>) -> impl Responder {
+    match query_get_all_documents(&state).await {
+        Ok(documents) => {
+            let shortened = documents
+                .into_iter()
+                .map(|doc| GetDocumentsResponse {
+                    id: doc.id,
+                    name: doc.name,
+                    modified_at: doc.modified_at,
+                })
+                .collect::<Vec<GetDocumentsResponse>>();
+
+            return HttpResponse::Ok().json(shortened);
+        }
+        Err(_) => HttpResponse::NotFound().json("No courses found"),
     }
 }
