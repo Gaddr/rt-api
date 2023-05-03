@@ -19,3 +19,4 @@ openssl = { version = "0.10.35", features = ["vendored"] }
 actix-cors = "0.6.4"
 reqwest = { version = "0.11.14", features = ["json", "serde_json"] }
 jsonwebtoken = "8.2.0"
+rand = "0.8"

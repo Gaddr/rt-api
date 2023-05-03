@@ -10,7 +10,7 @@ use uuid::Uuid;
 pub async fn query_add_document(
     state: &Data<AppState>,
     id: &Uuid,
-    document_details: &Json<CreateDocumentRequest>,
+    name: &String,
     current_timestamp: &DateTime<Utc>,
 ) -> Result<(), sqlx::Error> {
     let mut tx = state.db.begin().await?;
@@ -19,7 +19,7 @@ pub async fn query_add_document(
         "INSERT INTO grt.document (id, name, created_at, modified_at) VALUES ($1, $2, $3, $4)",
     )
     .bind(&id)
-    .bind(&document_details.name.to_string())
+    .bind(&name)
     .bind(&current_timestamp)
     .bind(&current_timestamp)
     .execute(&mut tx)

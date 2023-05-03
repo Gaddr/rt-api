@@ -1790,6 +1790,7 @@ dependencies = [
  "jsonwebtoken",
  "load-dotenv",
  "openssl",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",
