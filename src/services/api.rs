@@ -3,7 +3,7 @@ use crate::{
     models::api::{ModifyDocumentMetadataRequest, UpdateDocumentRequest},
     queries::{
         query_add_document, query_get_all_document_names, query_get_document_by_id,
-        query_get_document_by_name, query_update_document,
+        query_get_document_by_name, query_update_document, query_change_document_metadata,
     },
     AppState,
 };
@@ -25,8 +25,9 @@ pub fn api_scope() -> Scope {
     return web::scope("/document")
         .service(create_document)
         .service(get_all_names)
+        .service(get_document)
+        .service(modify_document_metadata)
         .service(update_document)
-        .service(get_document);
 }
 
 #[get("/create")]
@@ -89,8 +90,7 @@ async fn modify_document_metadata(
             .json("Doc with this name already exists. Please choose a different name.");
     }
 
-    // TODO: otherwise change the name. the below is wrong
-    match query_get_all_document_names(&state).await {
+    match query_change_document_metadata(&state, &body.id, &body.name).await {
         Ok(document) => return HttpResponse::Ok().json(document),
         Err(_) => HttpResponse::NotFound().json("No courses found"),
     }

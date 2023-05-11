@@ -9,6 +9,7 @@ use serde_json::{json, Value};
 
 #[derive(Deserialize)]
 pub struct ModifyDocumentMetadataRequest {
+    pub id: Uuid,
     pub name: String,
 }
 
@@ -16,4 +17,10 @@ pub struct ModifyDocumentMetadataRequest {
 pub struct UpdateDocumentRequest {
     pub id: Uuid,
     pub content: Value,
+}
+
+#[derive(Deserialize)]
+pub struct RenameDocumentRequest {
+    pub id: Uuid,
+    pub name: String,
 }

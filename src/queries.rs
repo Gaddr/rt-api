@@ -93,3 +93,28 @@ pub async fn query_update_document(
 
     return result;
 }
+
+pub async fn query_change_document_metadata(
+    state: &Data<AppState>,
+    id: &Uuid,
+    name: &String,
+) -> Result<(), sqlx::Error> {
+    let mut tx = state.db.begin().await?;
+
+    let result_change_document_metadata =
+        sqlx::query("UPDATE grt.document SET name=$2 WHERE id=$1")
+            .bind(&id)
+            .bind(&name)
+            .execute(&mut tx)
+            .await?
+            .rows_affected();
+
+    if result_change_document_metadata == 0 {
+        return tx.rollback().await;
+    }
+
+    let result = tx.commit().await;
+
+    return result;
+}
+
