@@ -118,3 +118,23 @@ pub async fn query_change_document_metadata(
     return result;
 }
 
+pub async fn query_delete_document(
+    state: &Data<AppState>,
+    id: &Uuid,
+) -> Result<(), sqlx::Error> {
+    let  mut tx = state.db.begin().await?;
+
+    let result_delete_document = sqlx::query("DELETE FROM grt.document WHERE id=$1")
+        .bind(&id)
+        .execute(&mut tx)
+        .await?
+        .rows_affected();
+
+    if result_delete_document == 0 {
+        return tx.rollback().await;
+    }
+
+    let result = tx.commit().await;
+
+    return result;
+}

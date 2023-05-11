@@ -4,6 +4,7 @@ use crate::{
     queries::{
         query_add_document, query_get_all_document_names, query_get_document_by_id,
         query_get_document_by_name, query_update_document, query_change_document_metadata,
+        query_delete_document,
     },
     AppState,
 };
@@ -28,6 +29,7 @@ pub fn api_scope() -> Scope {
         .service(get_document)
         .service(modify_document_metadata)
         .service(update_document)
+        .service(delete_document)
 }
 
 #[get("/create")]
@@ -105,6 +107,26 @@ async fn update_document(
     let current_timestamp = Utc::now();
     match query_update_document(&state, &body.id, &body.content, &current_timestamp).await {
         Ok(document) => HttpResponse::Ok().json(document),
+        Err(err) => {
+            return HttpResponse::InternalServerError()
+                .json(err.to_string());
+        }
+    }
+}
+
+#[delete("/delete/{id}")]
+async fn delete_document(
+    state: Data<AppState>,
+    path: Path<String>,
+    // _: auth::JwtMiddleware,
+) -> impl Responder {
+    let id: Uuid = match uuid::Uuid::try_parse(&path.into_inner()) {
+        Ok(id) => id,
+        Err(_) => return HttpResponse::BadRequest().json("Could not parse category id as a UUID!"),
+    };
+
+    match query_delete_document(&state, &id,).await {
+        Ok(result) => HttpResponse::Ok().json(result),
         Err(err) => {
             return HttpResponse::InternalServerError()
                 .json(err.to_string());
