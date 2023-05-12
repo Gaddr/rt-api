@@ -12,15 +12,17 @@ pub async fn query_add_document(
     state: &Data<AppState>,
     id: &Uuid,
     name: &String,
+    content: &Value,
     current_timestamp: &DateTime<Utc>,
 ) -> Result<(), sqlx::Error> {
     let mut tx = state.db.begin().await?;
 
     let result_create_document = sqlx::query(
-        "INSERT INTO grt.document (id, name, created_at, modified_at) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO grt.document (id, name, content, created_at, modified_at) VALUES ($1, $2, ($3::jsonb), $4, $5)",
     )
     .bind(&id)
     .bind(&name)
+    .bind(&content)
     .bind(&current_timestamp)
     .bind(&current_timestamp)
     .execute(&mut tx)

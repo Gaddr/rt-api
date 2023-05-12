@@ -2,9 +2,9 @@ use crate::{
     auth::auth,
     models::api::{ModifyDocumentMetadataRequest, UpdateDocumentRequest},
     queries::{
-        query_add_document, query_get_all_document_names, query_get_document_by_id,
-        query_get_document_by_name, query_update_document, query_change_document_metadata,
-        query_delete_document,
+        query_add_document, query_change_document_metadata, query_delete_document,
+        query_get_all_document_names, query_get_document_by_id, query_get_document_by_name,
+        query_update_document,
     },
     AppState,
 };
@@ -20,6 +20,7 @@ use sqlx::{
     self,
     types::chrono::{DateTime, NaiveDateTime, Utc},
 };
+use serde_json::{Result, Value, json};
 use uuid::Uuid;
 
 pub fn api_scope() -> Scope {
@@ -29,7 +30,7 @@ pub fn api_scope() -> Scope {
         .service(get_document)
         .service(modify_document_metadata)
         .service(update_document)
-        .service(delete_document)
+        .service(delete_document);
 }
 
 #[get("/create")]
@@ -44,8 +45,9 @@ async fn create_document(
     let random_number = rng.gen_range(0..100).to_string();
     let name = "New_".to_string() + &random_number;
     let current_timestamp = Utc::now();
+    let empty_editor_content = json!({"root":{"children":[{"children":[],"direction":null,"format":"","indent":0,"type":"paragraph","version":1}],"direction":null,"format":"","indent":0,"type":"root","version":1}});
 
-    match query_add_document(&state, &id, &name, &current_timestamp).await {
+    match query_add_document(&state, &id, &name, &empty_editor_content, &current_timestamp).await {
         Ok(_) => HttpResponse::Ok().json("Document created!"),
         Err(err) => {
             if err.to_string().contains("duplicate") {
@@ -108,8 +110,7 @@ async fn update_document(
     match query_update_document(&state, &body.id, &body.content, &current_timestamp).await {
         Ok(document) => HttpResponse::Ok().json(document),
         Err(err) => {
-            return HttpResponse::InternalServerError()
-                .json(err.to_string());
+            return HttpResponse::InternalServerError().json(err.to_string());
         }
     }
 }
@@ -125,11 +126,10 @@ async fn delete_document(
         Err(_) => return HttpResponse::BadRequest().json("Could not parse category id as a UUID!"),
     };
 
-    match query_delete_document(&state, &id,).await {
+    match query_delete_document(&state, &id).await {
         Ok(result) => HttpResponse::Ok().json(result),
         Err(err) => {
-            return HttpResponse::InternalServerError()
-                .json(err.to_string());
+            return HttpResponse::InternalServerError().json(err.to_string());
         }
     }
 }
