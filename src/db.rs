@@ -17,9 +17,9 @@ pub async fn get_db_pool(db_url: &str) -> Pool<Postgres> {
                 println!("Successfully connected to DB!");
                 break pool; // Breaks the loop and returns the pool
             }
-            Err(_) => {
+            Err(err) => {
                 if attempts >= 3 {
-                    panic!("Could not connect to DB after {} attempts!", attempts);
+                    panic!("Error: {}", err.to_string());
                 } else {
                     continue;
                 }
