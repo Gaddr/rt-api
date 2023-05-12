@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
             }))
             .service(api_scope())
     })
-    .bind(("0.0.0.0", 8080))?
+    .bind(("0.0.0.0", 8084))?
     .run()
     .await
 }
