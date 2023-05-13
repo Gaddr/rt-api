@@ -41,11 +41,10 @@ pub async fn query_add_document(
 pub async fn query_get_all_document_names(state: &Data<AppState>) -> Result<Vec<GetDocumentNamesResponse>, sqlx::Error> {
     let result = sqlx::query_as::<_, GetDocumentNamesResponse>("SELECT * FROM grt.document")
         .fetch_all(&state.db)
-        .await;
-    return result;
+        .await?;
+    Ok(result)
 }
 
-// TODO: keep in json
 pub async fn query_get_document_by_id(
     state: &Data<AppState>,
     id: &Uuid,
@@ -53,9 +52,8 @@ pub async fn query_get_document_by_id(
     let result = sqlx::query_as::<_, Document>("SELECT * FROM grt.document WHERE id=$1")
         .bind(&id)
         .fetch_one(&state.db)
-        .await;
-
-    return result;
+        .await?;
+    Ok(result)
 }
 
 pub async fn query_get_document_by_name(
@@ -65,9 +63,9 @@ pub async fn query_get_document_by_name(
     let result = sqlx::query_as::<_, Document>("SELECT * FROM grt.document WHERE name = $1")
         .bind(name)
         .fetch_one(&state.db)
-        .await;
-
-    return result;
+        .await?;
+    Ok(result)
+    // return result;
 }
 
 pub async fn query_update_document(
